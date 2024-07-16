@@ -54,7 +54,7 @@ Estructura principal del proyecto
 │      │               ├───repository
 │      │               ├───service
 │      │               │   └───impl
-│      │               └───util
+│      │               └───security
 │      └───resources
 │          ├───db
 │              └───migration
