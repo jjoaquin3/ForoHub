@@ -1,0 +1,23 @@
+version: '3.10'
+
+services:
+  mysql:
+    container_name: FOROHUB_CONTAINER
+    build:
+      context: .
+      dockerfile: dockerfile
+    image: forohub_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROOT_MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${FOROHUB_MYSQL_DATABASE}
+      MYSQL_USER: ${FOROHUB_MYSQL_USER}
+      MYSQL_PASSWORD: ${FOROHUB_MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./BaseDatos.sql:/docker-entrypoint-initdb.d/BaseDatos.sql
+      - ./init_db.sh:/docker-entrypoint-initdb.d/init_db.sh
+
+volumes:
+  mysql_data:
