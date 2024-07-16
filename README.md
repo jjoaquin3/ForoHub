@@ -33,7 +33,7 @@ El proyecto nace como un forma de demostrar la capacidades de elegir las libreri
 | Flywaydb               | https://flywaydb.org/         | 
 | Java JWT 4.2           | https://github.com/auth0/java-jwt        | 
 | ModelMapper 3.2.0      | https://modelmapper.org         | 
-| GitHub                 | https://github.com/jjoaquin3/ConversorMonedas |
+| GitHub                 | https://github.com/jjoaquin3 |
 
 Estos serian los principales, las otras libreria se pueden encontrar en pom.xml del API
 
