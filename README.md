@@ -1,7 +1,7 @@
 # ForoHub
 
 ![GitHub](https://img.shields.io/github/license/dropbox/dropbox-sdk-java)
-![version](https://img.shields.io/badge/version-1.0.1-blue)
+![version](https://img.shields.io/badge/version-1.0.2-blue)
 
 Proyecto para el desarrollo de un Foro, sabemos para qué sirve el foro y conocemos su aspecto, ¿pero sabemos cómo funciona detrás de escena? Es decir, ¿dónde se almacenan las informaciones? ¿Cómo se tratan los datos para relacionar un tópico con una respuesta, o cómo se relacionan los usuarios con las respuestas de un tópico?
 
@@ -16,7 +16,8 @@ El proyecto consta de los siguiente pasos y están disponibles en la sección ad
 5. [API](#api)
 6. [Consumo API](#consumo-api)
 7. [Manejo Respuestas](#manejo-respuestas)
-8. [Consideraciones](#consideraciones)
+8. [Spring Security y JWT](#spring-security-y-jwt)
+9. [Consideraciones](#consideraciones)
 
 ## Requerimientos
 
@@ -283,15 +284,110 @@ public class TopicResponseDTO
     }
 }
 ```
+## Spring Security y JWT
+
+Se configura Spring Security para forzar iniciar sesión y obtener Token con JWT y poder hacer uso de los endpoint (aunque actualmente estan solo los de Topic xD)
+
+* Actualizando dependencias
+``` xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-test</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>com.auth0</groupId>
+    <artifactId>java-jwt</artifactId>
+    <version>4.2.1</version>
+</dependency>
+```
+
+* Endpoint para autenticar usuario: en el cual se obtiene con información de usuario y password el token JWT
+``` java
+@RestController
+@RequestMapping("/login")
+public class AuthController
+{
+    private final AuthenticationManager authenticationManager;
+    private final TokenService tokenService;
+
+    @Autowired
+    public AuthController(AuthenticationManager authenticationManager, TokenService tokenService)
+    {
+        this.authenticationManager = authenticationManager;
+        this.tokenService = tokenService;
+    }
+
+    @PostMapping
+    public ResponseEntity authenticateUser(@RequestBody @Valid UserRequestDTO userRequestDTO)
+    {
+        var authToken = new UsernamePasswordAuthenticationToken(userRequestDTO.getUsername(), userRequestDTO.getPassword());
+        var authUser = authenticationManager.authenticate(authToken);
+        var jwtToken = tokenService.getToken((User) authUser.getPrincipal());
+        return ResponseEntity.ok(new JWTTokenDTO(jwtToken));
+    }
+}
+```
+
+* Filtrado de accesos: en el cual login con verbo post esta abierto para que se puedan obtener el token y utilizarlo en los otros verbos y paths
+``` java
+@Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
+    {
+        return http.csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests
+            (
+                authorize -> authorize
+                    .requestMatchers(HttpMethod.POST, "/login")
+                        .permitAll()
+                    /*.requestMatchers(HttpMethod.GET)
+                    .permitAll()*/
+                    .anyRequest()
+                    .authenticated()
+            )
+            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+            .build();
+    }
+```
+
+01. Login y obtener token
+<div style="text-align: center;">
+    <img src="assets/jwtToken.PNG" alt="jwtToken" width="500">
+</div>
+
+02. Mostrar todos los tópicos (usando token)
+<div style="text-align: center;">
+    <img src="assets/getAutorizationWithJWT.PNG" alt="getAutorizationWithJWT" width="500">
+</div>
+
+03.  Mostrar todos los tópicos (sin usar token) = error 403
+<div style="text-align: center;">
+    <img src="assets/getErrorWithoutJWT.PNG" alt="getErrorWithoutJWT" width="500">
+</div>
+
+04. Crear Topic (usando token)
+<div style="text-align: center;">
+    <img src="assets/postAutorizationWithToken.PNG" alt="postAutorizationWithToken" width="500">
+</div>
+
+
 
 ## Consideraciones
 
-- **Actualente la API contiene el CRUD para la entidad de TOPIC
+- Actualente la API contiene el CRUD para la entidad de TOPIC
 
 ### Próximas Actualizaciones
 
 - Implementación de Respuestas de otras entidades
-- Manejo de Roles y Permisos
+- Manejo de Roles y permisos por rol
+- y mas 
 
 
 Fin c:
